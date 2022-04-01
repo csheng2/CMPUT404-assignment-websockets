@@ -74,7 +74,7 @@ myWorld = World()
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
-    print("set listener: ", data)
+    myWorld.set(entity, data)
 
 def send_all(msg):
     for client in clients:

@@ -8,6 +8,8 @@
     <meta name="license" content="
         Copyright 2013 Google, Abram Hindle
         
+        Copyright 2021, Modified by Celina Sheng
+        
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
         You may obtain a copy of the License at
@@ -24,8 +26,7 @@
   </head> 
   <body bgcolor="white" height="100%" width="100%"> 
     <div id="debug"></div>
-    <canvas id="c" width="100%" height="100%" style="-webkit-tap-highlight-color: transparent;"></canvas> 
-
+    <canvas id="c" width="100%" height="100%" style="-webkit-tap-highlight-color: transparent; background: url('noise_background.jpeg');"></canvas> 
     <script>
       // Fix me
 var canvas = document.getElementById('c');
@@ -35,6 +36,14 @@ var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 var wscounter = 0;
 var socket;
+
+// Add images
+var starImg = new Image(60, 60);
+var smileImg = new Image(100, 100);
+var moonSmileImg = new Image(75, 75);
+starImg.src = 'smiling_star.png'
+smileImg.src = 'smile.png'
+moonSmileImg.src = 'moon_smile.png'
 
 function debug(str) {
     var debugDiv = document.getElementById('debug');
@@ -47,15 +56,26 @@ world = {};
 //XXX: TODO Make this prettier!
 function drawCircle(context,entity) {
     with(context) {
-        beginPath();                
-        lineWidth = 3;
         var x = entity["x"];
         var y = entity["y"];
-        //moveTo(x,y);
-        fillStyle = entity["colour"];
-        strokeStyle = fillStyle;
-        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
-        stroke();                                
+
+        // moveTo(x,y);
+        // we position x as x - image.width/2 and y as y - image.height/2 to make the mouse centered with the image.
+        if(entity['img'] == 'star'){
+            context.drawImage(starImg, x - starImg.width/2, y - starImg.height/2, starImg.width, starImg.height);
+        } else if (entity['img'] == 'smile') {
+            context.drawImage(smileImg, x - smileImg.width/2, y - smileImg.height/2, smileImg.width, smileImg.height);
+        } else if (entity['img'] == 'red-smile') {
+            context.drawImage(moonSmileImg, x - moonSmileImg.width/2, y - moonSmileImg.height/2, moonSmileImg.width, moonSmileImg.height);
+        } else {
+            // default to circles
+            beginPath();              
+            lineWidth = 3;
+            fillStyle = entity["colour"];
+            strokeStyle = fillStyle;
+            arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
+            stroke();                                
+        }                               
     }
 }
 
@@ -235,15 +255,15 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'img':'smile'});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'img':'red-smile'});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
+    addEntityWithoutName({'x':x,'y':y,'img':'star',
                           'radius':10});
 });
 
@@ -262,7 +282,9 @@ function wsSetup() {
         fetch("/world")
             .then(resp => resp.json())
             .then(data => {
-                console.log(data)
+                console.log("socket.onopen, data: ", data)
+                world = data
+                drawNextFrame()
             })
     };
     socket.onerror = function(msg) {
